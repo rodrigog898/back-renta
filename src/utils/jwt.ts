@@ -8,7 +8,7 @@ export interface JwtPayload {
   [k: string]: unknown;
 }
 
-export function signAccess(payload: Omit<JwtPayload, 'typ'>, expiresIn: string | number = '30s'): string {
+export function signAccess(payload: Omit<JwtPayload, 'typ'>, expiresIn: string | number = '1h'): string {
   return jwt.sign({ ...payload, typ: 'access' }, env.jwtSecret, { expiresIn } as SignOptions);
 }
 

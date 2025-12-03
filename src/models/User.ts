@@ -7,6 +7,7 @@ export interface IUser extends Document {
   nombre?: string;
   apellido?: string;
   rol?: string;
+  id_corredor?: string; 
   passwordHash: string;
   createdAt: Date;
   updatedAt: Date;
@@ -15,6 +16,8 @@ export interface IUser extends Document {
 const userSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true, index: true },
   passwordHash: { type: String, required: true },
+  rol: { type: String, default: '', index: true },
+  id_corredor: { type: String, index: true },
 }, { timestamps: true });
 
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', userSchema);

@@ -45,13 +45,12 @@ export async function login(email: string, password: string) {
 }
 
 export async function issueTokens(userId: string) {
-  const accessToken = signAccess({ sub: userId }, '30s');
+  const accessToken = signAccess({ sub: userId }, '1h');
   const refreshToken = signRefresh({ sub: userId }, '7d');
 
   const tokenHash = sha256(refreshToken);
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  // 🔥 upsert: un solo refresh token por usuario
   await RefreshToken.findOneAndUpdate(
     { userId }, 
     { tokenHash, expiresAt, revokedAt: null },
