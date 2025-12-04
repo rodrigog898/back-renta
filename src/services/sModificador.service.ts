@@ -96,7 +96,6 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
       throw err;
     }
 
-    // Log de éxito
     try {
       await Audit.log(auditCtx, {
         action: 'cotizacion.get.modificar',
@@ -110,7 +109,6 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
 
     return cot;
   } catch (error: any) {
-    // Log de error general
     try {
       await Audit.log(auditCtx, {
         action: 'cotizacion.get.modificar.error',

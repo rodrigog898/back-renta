@@ -21,7 +21,7 @@ export interface AutocompletadoResult {
     t_producto: string;
   };
   estado: string;
-  label: string; // Texto para mostrar en el autocompletado
+  label: string; 
 }
 
 export async function buscarAutocompletado(req: AuthedRequest): Promise<AutocompletadoResult[]> {
@@ -36,8 +36,7 @@ export async function buscarAutocompletado(req: AuthedRequest): Promise<Autocomp
     }
 
     const query = String(req.query.q || "").trim();
-    const limit = Math.min(Number(req.query.limit) || 10, 20); // Máximo 20 resultados
-
+    const limit = Math.min(Number(req.query.limit) || 10, 20); 
     if (!query || query.length < 2) {
       try {
         await Audit.log(auditCtx, {
@@ -54,7 +53,6 @@ export async function buscarAutocompletado(req: AuthedRequest): Promise<Autocomp
 
     let resultados: any[] = [];
     try {
-      // Buscar en múltiples campos
       const searchRegex = new RegExp(query, "i");
       
       const condiciones: any[] = [
@@ -64,16 +62,14 @@ export async function buscarAutocompletado(req: AuthedRequest): Promise<Autocomp
         { "vehiculo.marca": searchRegex },
         { "vehiculo.modelo": searchRegex },
         { "vehiculo.patente": searchRegex },
-        { "producto.t_producto": searchRegex }
+        { "producto.t_producto": searchRegex       }
       ];
 
-      // Si el query es un número, también buscar por n_cotizacion
       const nCotizacion = Number(query);
       if (!isNaN(nCotizacion)) {
         condiciones.push({ n_cotizacion: nCotizacion });
       }
 
-      // Si el query contiene "COT" o "COT-", buscar por número de cotización
       const cotMatch = query.match(/COT-?(\d+)/i);
       if (cotMatch && cotMatch[1]) {
         const numCot = Number(cotMatch[1]);
@@ -82,9 +78,7 @@ export async function buscarAutocompletado(req: AuthedRequest): Promise<Autocomp
         }
       }
 
-      // Si el query es solo "COT" o "COT-", buscar todas las cotizaciones (sin filtro de texto)
       if (query.toUpperCase().trim() === 'COT' || query.toUpperCase().trim() === 'COT-') {
-        // Retornar todas las cotizaciones del corredor (limitadas)
         resultados = await Cotizacion.find({
           id_corredor: userId
         })
@@ -102,7 +96,6 @@ export async function buscarAutocompletado(req: AuthedRequest): Promise<Autocomp
           metadata: { query, userId, limit, type: 'all_cotizaciones' }
         });
 
-        // Formatear y retornar directamente
         return resultados.map((cot: any) => {
           const nombreCompleto = `${cot.cliente.nombre} ${cot.cliente.apellido}`.trim();
           const vehiculoCompleto = `${cot.vehiculo.marca} ${cot.vehiculo.modelo}`.trim();
@@ -161,12 +154,10 @@ export async function buscarAutocompletado(req: AuthedRequest): Promise<Autocomp
       throw err;
     }
 
-    // Formatear resultados para el autocompletado
     const resultadosFormateados: AutocompletadoResult[] = resultados.map((cot: any) => {
       const nombreCompleto = `${cot.cliente.nombre} ${cot.cliente.apellido}`.trim();
       const vehiculoCompleto = `${cot.vehiculo.marca} ${cot.vehiculo.modelo}`.trim();
       
-      // Crear label descriptivo para mostrar
       const label = `COT-${cot.n_cotizacion} - ${nombreCompleto} - ${vehiculoCompleto}`;
 
       return {
@@ -192,7 +183,6 @@ export async function buscarAutocompletado(req: AuthedRequest): Promise<Autocomp
 
     return resultadosFormateados;
   } catch (error: any) {
-    // Log de error general
     try {
       await Audit.log(auditCtx, {
         action: 'autocomplete.search.error',

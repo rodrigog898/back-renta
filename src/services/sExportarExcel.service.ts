@@ -148,7 +148,6 @@ export async function exportarBitacora(req: AuthedRequest) {
     ordenamientos.push({ campo: "fecha_cotizacion", dir: -1 });
   }
 
-  // FUNCIÓN HELPER PARA OBTENER VALOR
   const obtenerValor = (obj: any, campo: string): any => {
     const partes = campo.split(".");
     let valor: any = obj;
@@ -164,13 +163,11 @@ export async function exportarBitacora(req: AuthedRequest) {
       let valA = obtenerValor(a, orden.campo);
       let valB = obtenerValor(b, orden.campo);
 
-      // Normalizar fechas
       if (orden.campo === "fecha_cotizacion") {
         valA = valA ? normalizarFecha(String(valA)) : "";
         valB = valB ? normalizarFecha(String(valB)) : "";
       }
 
-      // Comparar
       let diff = 0;
       if (typeof valA === "number" && typeof valB === "number") {
         diff = valA - valB;
@@ -198,14 +195,12 @@ export async function exportarBitacora(req: AuthedRequest) {
   const minuto = String(fechaActual.getMinutes()).padStart(2, '0');
   const fechaFormateada = `${dia}/${mes}/${anio} ${hora}:${minuto}`;
 
-  // Título
   const titleRow = sheet.addRow([`Reporte de Bitácora de Cotizaciones`]);
   titleRow.getCell(1).font = { bold: true, size: 16, color: { argb: 'FF1F2937' } };
   titleRow.height = 25;
   sheet.mergeCells(1, 1, 1, 21);
   titleRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-  // Metadatos
   const userRow = sheet.addRow([`Generado por: ${nombreUsuario}`]);
   userRow.getCell(1).font = { size: 11, color: { argb: 'FF6B7280' } };
   sheet.mergeCells(2, 1, 2, 21);
@@ -216,7 +211,6 @@ export async function exportarBitacora(req: AuthedRequest) {
   
   sheet.addRow([]);
 
-  // Encabezados
   const headerRow = sheet.addRow([
     "N° Cotización",
     "Fecha Cotización",
@@ -302,8 +296,6 @@ export async function exportarBitacora(req: AuthedRequest) {
       }
     });
 
-   
-    // Formato de números
     const deducibleCell = row.getCell(17);
     deducibleCell.numFmt = '#,##0';
     deducibleCell.alignment = { vertical: 'middle', horizontal: 'right' };
@@ -327,32 +319,30 @@ export async function exportarBitacora(req: AuthedRequest) {
     row.height = 20;
   });
 
-  
   sheet.columns = [
-    { width: 15 }, // N° Cotización
-    { width: 20 }, // Fecha Cotización
-    { width: 25 }, // ID Corredor
-    { width: 18 }, // Cliente - RUT
-    { width: 20 }, // Cliente - Nombre
-    { width: 20 }, // Cliente - Apellido
-    { width: 30 }, // Cliente - Correo
-    { width: 18 }, // Cliente - Teléfono
-    { width: 12 }, // Cliente - Sexo
-    { width: 18 }, // Cliente - Fecha Nacimiento
-    { width: 18 }, // Vehículo - Marca
-    { width: 18 }, // Vehículo - Modelo
-    { width: 10 }, // Vehículo - Año
-    { width: 12 }, // Vehículo - Patente
-    { width: 15 }, // Vehículo - Kilometraje
-    { width: 35 }, // Producto - Tipo
-    { width: 15 }, // Producto - Deducible
-    { width: 15 }, // Prima
-    { width: 15 }, // Comisión
-    { width: 15 }, // Prob. Cierre
-    { width: 15 }  // Estado
+    { width: 15 },
+    { width: 20 },
+    { width: 25 },
+    { width: 18 },
+    { width: 20 },
+    { width: 20 },
+    { width: 30 },
+    { width: 18 },
+    { width: 12 },
+    { width: 18 },
+    { width: 18 },
+    { width: 18 },
+    { width: 10 },
+    { width: 12 },
+    { width: 15 },
+    { width: 35 },
+    { width: 15 },
+    { width: 15 },
+    { width: 15 },
+    { width: 15 },
+    { width: 15 }
   ];
 
-  // Congelar fila de encabezados
   sheet.views = [
     {
       state: 'frozen',
@@ -379,7 +369,6 @@ export async function exportarBitacora(req: AuthedRequest) {
       throw err;
     }
 
-    // Log de éxito
     try {
       await Audit.log(auditCtx, {
         action: 'excel.export.success',
@@ -393,7 +382,6 @@ export async function exportarBitacora(req: AuthedRequest) {
 
     return buffer;
   } catch (error: any) {
-    // Log de error general
     try {
       await Audit.log(auditCtx, {
         action: 'excel.export.error',

@@ -24,11 +24,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use(requestTimeout());
 app.use('/api', apiLimiter);
 
-// Health endpoints
 app.get('/health/liveness', (_req, res) => res.json({ status: 'ok' }));
 app.get('/health/readiness', (_req, res) => res.json({ status: 'ready' }));
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/bitacora', bitacoraRoutes, exportarExcelRoutes, autocompletadoRoutes);

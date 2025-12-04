@@ -63,13 +63,11 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
 
-        // 1. ENCABEZADO
         doc
           .fontSize(22)
           .text("Cotización de Seguro", { align: "center" })
           .moveDown(1);
 
-        // Línea separadora
         doc
           .moveTo(40, doc.y)
           .lineTo(550, doc.y)
@@ -77,7 +75,6 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
           .stroke()
           .moveDown();
 
-        // 2. DATOS DEL CLIENTE
         doc
           .fontSize(14)
           .fillColor("#333")
@@ -93,7 +90,6 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
           .text(`Teléfono: ${cot.cliente.telefono}`)
           .moveDown(1);
 
-        // 3. BIEN ASEGURADO
         doc
           .fontSize(14)
           .fillColor("#333")
@@ -110,7 +106,6 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
           .text(`Kilometraje: ${cot.vehiculo.kilometraje} km`)
           .moveDown(1);
 
-        // 4. PRODUCTO Y COBERTURAS
         doc
           .fontSize(14)
           .fillColor("#333")
@@ -124,7 +119,6 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
           .text(`Deducible: $${cot.producto.deducible.toLocaleString('es-CL')}`)
           .moveDown(1);
 
-        // 5. MONTOS
         doc
           .fontSize(14)
           .fillColor("#333")
@@ -139,7 +133,6 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
           .text(`Probabilidad de Cierre: ${(cot.prob_cierre * 100).toFixed(2)}%`)
           .moveDown(2);
 
-        // Pie de página
         doc
           .fontSize(10)
           .fillColor("#777")
@@ -163,7 +156,6 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
       throw err;
     }
 
-    // Log de éxito
     try {
       await Audit.log(auditCtx, {
         action: 'pdf.export.success',
@@ -177,7 +169,6 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
 
     return buffer;
   } catch (error: any) {
-    // Log de error general
     try {
       await Audit.log(auditCtx, {
         action: 'pdf.export.error',
