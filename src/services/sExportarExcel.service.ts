@@ -159,7 +159,6 @@ export async function exportarBitacora(req: AuthedRequest) {
     return valor === null || valor === undefined ? "" : valor;
   };
 
-  // ORDENAMIENTO REAL - PROCESAR CADA CAMPO EN SECUENCIA
   datos.sort((a, b) => {
     for (const orden of ordenamientos) {
       let valA = obtenerValor(a, orden.campo);
@@ -181,7 +180,6 @@ export async function exportarBitacora(req: AuthedRequest) {
         diff = strA.localeCompare(strB, "es", { sensitivity: "base", numeric: true });
       }
 
-      // Si hay diferencia, retornar con dirección aplicada
       if (diff !== 0) {
         return diff * orden.dir;
       }
