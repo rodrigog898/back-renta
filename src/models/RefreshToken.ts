@@ -10,8 +10,8 @@ export interface IRefreshToken extends Document {
 }
 
 const refreshTokenSchema = new Schema<IRefreshToken>({
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  tokenHash: { type: String, required: true, index: true }, // 👈 SIN unique
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true},
+  tokenHash: { type: String, required: true, index: true }, 
   expiresAt: { type: Date, required: true },
   createdAt: { type: Date, default: Date.now },
   revokedAt: { type: Date }

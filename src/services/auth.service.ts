@@ -45,7 +45,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function issueTokens(userId: string) {
-  const accessToken = signAccess({ sub: userId }, '30s');
+  const accessToken = signAccess({ sub: userId }, '1h'); 
   const refreshToken = signRefresh({ sub: userId }, '7d');
 
   const tokenHash = sha256(refreshToken);
