@@ -33,18 +33,14 @@ app.get('/health/readiness', (_req, res) => res.json({ status: 'ready' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 
-app.use('/api/bitacora',
-  bitacoraKpiRoutes,
-  exportarExcelRoutes,
-  autocompletadoRoutes,
-  cBitacoraRoutes
-);
+app.use('/api/bitacora', bitacoraKpiRoutes);
+app.use('/api/bitacora', exportarExcelRoutes);
+app.use('/api/bitacora', autocompletadoRoutes);
+app.use('/api/bitacora', cBitacoraRoutes);
 
-app.use('/api/cotizaciones',
-  cCotizacionRoutes,
-  editarCotizacionRoutes,
-  exportarPdfRoutes
-);
+app.use('/api/cotizaciones', cCotizacionRoutes);
+app.use('/api/cotizaciones', editarCotizacionRoutes);
+app.use('/api/cotizaciones', exportarPdfRoutes);
 
 app.use(errorHandler);
 
