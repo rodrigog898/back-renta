@@ -37,24 +37,18 @@ export async function obtenerDatosVehiculo(patente: string) {
     const apiUrl = process.env.VEHICULO_API_URL || 'http://localhost:5000/api/vehiculo';
     const url = `${apiUrl}?patente=${patenteNormalizada}`;
     
-    console.log(`[API] Consultando: ${url}`);
     const response = await axios.get(url);
 
     const api = response.data;
-    console.log(`[API] Respuesta recibida:`, JSON.stringify(api, null, 2));
 
     if (!api || api.success !== true || !api.data) {
-      console.log(`[API] Respuesta inválida o sin datos. success: ${api?.success}, tiene data: ${!!api?.data}`);
       return null;
     }
 
     const datosApi = api.data;
     const patenteApi = datosApi.patente?.toUpperCase().trim();
 
-    console.log(`[API] Patente recibida: "${patenteApi}", esperada: "${patenteNormalizada}"`);
-
     if (patenteApi !== patenteNormalizada) {
-      console.log("[API] Patente no coincide. API entregó datos genéricos. Se descarta.");
       return null;
     }
 
@@ -72,7 +66,6 @@ export async function obtenerDatosVehiculo(patente: string) {
     };
 
   } catch (err) {
-    console.log("Error consultando API externa:", err);
   }
 
   return null;

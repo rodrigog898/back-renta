@@ -14,7 +14,7 @@ import editarCotizacionRoutes from './routes/cmodificarCotizacion.routes';
 import exportarExcelRoutes from './routes/cExportarExcel.routes';
 import exportarPdfRoutes from './routes/cExportarPdf.routes';
 import autocompletadoRoutes from './routes/cAutocompletado.routes';
-import cBitacoraRoutes from './routes/cbitacoraKpi.routes';
+import cBitacoraRoutes from './routes/cbitacora.routes';
 import cCotizacionRoutes from "./routes/cCotizacion.routes";
 
 const app = express();
