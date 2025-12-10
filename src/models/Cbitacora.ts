@@ -85,7 +85,6 @@ const cotizacionSchema = new Schema<ICotizacion>(
 
 const Cotizacion: Model<ICotizacion> =
   (mongoose.models.Cotizacion as Model<ICotizacion>) ||
-  mongoose.model<ICotizacion>('Cotizacion', cotizacionSchema, 'cotizacion'); // ← fuerza colección exacta
-
+  mongoose.model<ICotizacion>('Cotizacion', cotizacionSchema, 'cotizacion'); 
 
 export default Cotizacion;

@@ -1,7 +1,6 @@
-// src/controllers/cotizacion.controller.ts
 import { Response } from "express";
 import { AuthedRequest } from "../middleware/auth";
-import * as CotizacionService from "../services/Cbitacora.service";
+import * as CotizacionService from "../services/cbitacora.service";
 
 export async function list(req: AuthedRequest, res: Response) {
   try {
