@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { AuthedRequest } from "../middleware/auth";
-import { obtenerInfoCompletaPatente, actualizarVehiculoService } from "../services/sCotizacion.service";
+import { obtenerInfoCompletaPatente, actualizarVehiculoService, obtenerInfoCompletaRut, actualizarAseguradoService } from "../services/sCotizacion.service";
 import { AppError } from "../utils/AppError";
 import { getAuditContext } from "../middleware/audit";
 
@@ -24,5 +24,28 @@ export async function actualizarVehiculo(req: AuthedRequest, res: Response) {
   }
 
   const resultado = await actualizarVehiculoService(datosVehiculo, auditCtx);
+  return res.json(resultado);
+}
+
+export async function obtenerDatosRut(req: AuthedRequest, res: Response) {
+  const { rut } = req.params;
+
+  if (!rut) {
+    throw new AppError("Debe enviar un RUT.", 400);
+  }
+
+  const resultado = await obtenerInfoCompletaRut(rut);
+  return res.json(resultado);
+}
+
+export async function actualizarAsegurado(req: AuthedRequest, res: Response) {
+  const datosAsegurado = req.body;
+  const auditCtx = getAuditContext(req);
+
+  if (!datosAsegurado.rut_cliente || !datosAsegurado.nombre || !datosAsegurado.apellido || !datosAsegurado.correo) {
+    throw new AppError("Debe enviar RUT, nombre, apellido y correo.", 400);
+  }
+
+  const resultado = await actualizarAseguradoService(datosAsegurado, auditCtx);
   return res.json(resultado);
 }

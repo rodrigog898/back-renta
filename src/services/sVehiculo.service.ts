@@ -1,5 +1,5 @@
 import axios from "axios";
-import Vehiculo from "../models/Vehiculo";
+import Cotizacion from "../models/sBitacora";
 import { AppError } from "../utils/AppError";
 import * as Audit from "./audit.service";
 import { AuditContext } from "../middleware/audit";
@@ -8,25 +8,30 @@ export async function obtenerDatosVehiculo(patente: string) {
   const patenteNormalizada = patente.toUpperCase().trim();
 
   try {
-    let vehiculoBD = await Vehiculo.findOne({ patente: patenteNormalizada }).lean();
+    let cotizacionBD = await Cotizacion.findOne({ 
+      "vehiculo.patente": patenteNormalizada 
+    }).lean();
     
-    if (!vehiculoBD) {
-      vehiculoBD = await Vehiculo.findOne({ patente: new RegExp(`^${patenteNormalizada}$`, "i") }).lean();
+    if (!cotizacionBD) {
+      cotizacionBD = await Cotizacion.findOne({ 
+        "vehiculo.patente": new RegExp(`^${patenteNormalizada}$`, "i") 
+      }).lean();
     }
 
-    if (vehiculoBD) {
+    if (cotizacionBD && cotizacionBD.vehiculo) {
+      const vehiculo = cotizacionBD.vehiculo;
       return {
         fuente: "bd",
-        patente: vehiculoBD.patente,
-        marca: vehiculoBD.marca,
-        modelo: vehiculoBD.modelo,
-        anio: vehiculoBD.anio,
-        tipo: vehiculoBD.tipo,
-        color: vehiculoBD.color,
-        valor_comercial: vehiculoBD.valor_comercial,
-        chasis: vehiculoBD.chasis,
-        motor: vehiculoBD.motor,
-        kilometraje: vehiculoBD.kilometraje || null
+        patente: vehiculo.patente,
+        marca: vehiculo.marca,
+        modelo: vehiculo.modelo,
+        anio: vehiculo.anio,
+        tipo: vehiculo.tipo || vehiculo.tipoVehiculo,
+        color: vehiculo.color,
+        valor_comercial: vehiculo.valor_comercial,
+        chasis: vehiculo.chasis || vehiculo.numeroChasis,
+        motor: vehiculo.motor || vehiculo.numeroMotor,
+        kilometraje: vehiculo.kilometraje || null
       };
     }
   } catch (err) {
@@ -89,8 +94,8 @@ export async function actualizarOCrearVehiculo(
   const patenteNormalizada = datosVehiculo.patente.toUpperCase().trim();
 
   try {
-    const vehiculoExistente = await Vehiculo.findOne({ 
-      patente: new RegExp(`^${patenteNormalizada}$`, "i") 
+    const cotizacionExistente = await Cotizacion.findOne({ 
+      "vehiculo.patente": new RegExp(`^${patenteNormalizada}$`, "i") 
     }).lean();
 
     const datosActualizados = {
@@ -103,24 +108,24 @@ export async function actualizarOCrearVehiculo(
       valor_comercial: datosVehiculo.valor_comercial,
       chasis: datosVehiculo.chasis,
       motor: datosVehiculo.motor,
-      kilometraje: datosVehiculo.kilometraje
+      kilometraje: datosVehiculo.kilometraje || 0
     };
 
-    if (vehiculoExistente) {
+    if (cotizacionExistente && cotizacionExistente.vehiculo) {
       const before = {
-        patente: vehiculoExistente.patente,
-        marca: vehiculoExistente.marca,
-        modelo: vehiculoExistente.modelo,
-        anio: vehiculoExistente.anio
+        patente: cotizacionExistente.vehiculo.patente,
+        marca: cotizacionExistente.vehiculo.marca,
+        modelo: cotizacionExistente.vehiculo.modelo,
+        anio: cotizacionExistente.vehiculo.anio
       };
 
-      const vehiculoActualizado = await Vehiculo.findByIdAndUpdate(
-        vehiculoExistente._id,
-        { $set: datosActualizados },
+      const cotizacionActualizada = await Cotizacion.findByIdAndUpdate(
+        cotizacionExistente._id,
+        { $set: { vehiculo: datosActualizados } },
         { new: true, runValidators: true }
       ).lean();
 
-      if (!vehiculoActualizado) {
+      if (!cotizacionActualizada || !cotizacionActualizada.vehiculo) {
         throw new AppError("Error al actualizar el vehículo en la base de datos", 500);
       }
 
@@ -128,14 +133,14 @@ export async function actualizarOCrearVehiculo(
         try {
           await Audit.log(auditCtx, {
             action: 'vehiculo.update',
-            entity: 'Vehiculo',
-            entityId: String(vehiculoActualizado._id),
+            entity: 'Cotizacion',
+            entityId: String(cotizacionActualizada._id),
             before,
             after: {
-              patente: vehiculoActualizado.patente,
-              marca: vehiculoActualizado.marca,
-              modelo: vehiculoActualizado.modelo,
-              anio: vehiculoActualizado.anio
+              patente: cotizacionActualizada.vehiculo.patente,
+              marca: cotizacionActualizada.vehiculo.marca,
+              modelo: cotizacionActualizada.vehiculo.modelo,
+              anio: cotizacionActualizada.vehiculo.anio
             },
             metadata: { patente: patenteNormalizada }
           });
@@ -144,37 +149,12 @@ export async function actualizarOCrearVehiculo(
 
       return {
         accion: "actualizado",
-        vehiculo: vehiculoActualizado
+        vehiculo: cotizacionActualizada.vehiculo
       };
     } else {
-      const nuevoVehiculo = await Vehiculo.create(datosActualizados);
-      const vehiculoCreado = await Vehiculo.findById(nuevoVehiculo._id).lean();
-
-      if (!vehiculoCreado) {
-        throw new AppError("Error al crear el vehículo en la base de datos", 500);
-      }
-
-      if (auditCtx) {
-        try {
-          await Audit.log(auditCtx, {
-            action: 'vehiculo.create',
-            entity: 'Vehiculo',
-            entityId: String(vehiculoCreado._id),
-            before: null,
-            after: {
-              patente: vehiculoCreado.patente,
-              marca: vehiculoCreado.marca,
-              modelo: vehiculoCreado.modelo,
-              anio: vehiculoCreado.anio
-            },
-            metadata: { patente: patenteNormalizada }
-          });
-        } catch {}
-      }
-
       return {
-        accion: "creado",
-        vehiculo: vehiculoCreado
+        accion: "no_encontrado",
+        vehiculo: datosActualizados
       };
     }
   } catch (err: any) {
@@ -184,7 +164,7 @@ export async function actualizarOCrearVehiculo(
       try {
         await Audit.log(auditCtx, {
           action: 'vehiculo.update.error',
-          entity: 'Vehiculo',
+          entity: 'Cotizacion',
           entityId: null,
           before: null,
           after: null,

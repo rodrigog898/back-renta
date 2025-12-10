@@ -7,7 +7,11 @@ export interface ICliente {
   correo: string;
   telefono: string;
   sexo: string;
-  fecha_nacimiento: string; // dd-mm-yyyy
+  fecha_nacimiento: string;
+  ciudad?: string;
+  comuna?: string;
+  direccion?: string;
+  genero?: string;
 }
 
 export interface IVehiculo {
@@ -16,6 +20,14 @@ export interface IVehiculo {
   anio: number;
   patente: string;
   kilometraje: number;
+  chasis?: string;
+  color?: string;
+  motor?: string;
+  tipo?: string;
+  valor_comercial?: string;
+  numeroChasis?: string;
+  numeroMotor?: string;
+  tipoVehiculo?: string;
 }
 
 export interface IProducto {
@@ -49,6 +61,10 @@ const clienteSchema = new Schema<ICliente>({
   telefono: { type: String, required: true },
   sexo: { type: String, required: true },
   fecha_nacimiento: { type: String, required: true },
+  ciudad: { type: String, required: false },
+  comuna: { type: String, required: false },
+  direccion: { type: String, required: false },
+  genero: { type: String, required: false },
 });
 
 const vehiculoSchema = new Schema<IVehiculo>({
@@ -57,6 +73,14 @@ const vehiculoSchema = new Schema<IVehiculo>({
   anio: { type: Number, required: true },
   patente: { type: String, required: true },
   kilometraje: { type: Number, required: true },
+  chasis: { type: String, required: false },
+  color: { type: String, required: false },
+  motor: { type: String, required: false },
+  tipo: { type: String, required: false },
+  valor_comercial: { type: String, required: false },
+  numeroChasis: { type: String, required: false },
+  numeroMotor: { type: String, required: false },
+  tipoVehiculo: { type: String, required: false },
 });
 
 const productoSchema = new Schema<IProducto>({
