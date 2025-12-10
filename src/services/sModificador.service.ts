@@ -3,6 +3,7 @@ import Cotizacion from '../models/sBitacora';
 import * as Audit from './audit.service';
 import { getAuditContext } from '../middleware/audit';
 import { Request } from 'express';
+import { AppError } from '../utils/AppError';
 
 export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionId: string) {
   const auditCtx = getAuditContext(req as Request);
@@ -10,9 +11,7 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
   try {
     const userId = req.user?.id;
     if (!userId) {
-      const err: any = new Error("User not authenticated");
-      err.status = 401;
-      throw err;
+      throw new AppError("User not authenticated", 401);
     }
 
     let cot;
@@ -27,9 +26,7 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
         after: null,
         metadata: { error: dbError.message, operation: 'findById' }
       });
-      const err: any = new Error("Error al buscar cotización");
-      err.status = 500;
-      throw err;
+      throw new AppError("Error al buscar cotización", 500);
     }
 
     if (!cot) {
@@ -41,9 +38,7 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
         after: null,
         metadata: { userId }
       });
-      const err: any = new Error("Cotización no encontrada");
-      err.status = 404;
-      throw err;
+      throw new AppError("Cotización no encontrada", 404);
     }
 
     if (cot.id_corredor !== userId) {
@@ -55,9 +50,7 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
         after: null,
         metadata: { userId, ownerId: cot.id_corredor }
       });
-      const err: any = new Error("No tienes permiso para modificar esta cotización");
-      err.status = 403;
-      throw err;
+      throw new AppError("No tienes permiso para editar esta cotización", 403);
     }
 
     const estadosEmitidos = ["EMITIDA", "FINALIZADA", "CERRADA", "FINALIZADO", "CERRADO", "EMITIDO"];
@@ -70,9 +63,7 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
         after: null,
         metadata: { estado: cot.estado, userId }
       });
-      const err: any = new Error("La cotización ya fue emitida y no puede modificarse");
-      err.status = 400;
-      throw err;
+      throw new AppError("La cotización ya fue emitida y no puede editarse", 400);
     }
 
     const fecha = new Date(
@@ -91,14 +82,12 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
         after: null,
         metadata: { fechaCotizacion: cot.fecha_cotizacion, limite: limite.toISOString(), userId }
       });
-      const err: any = new Error("La cotización esta fuera de vigencia");
-      err.status = 400;
-      throw err;
+      throw new AppError("La cotización esta fuera de vigencia", 400);
     }
 
     try {
       await Audit.log(auditCtx, {
-        action: 'cotizacion.get.modificar',
+        action: 'cotizacion.get.editar',
         entity: 'Cotizacion',
         entityId: cotizacionId,
         before: null,
@@ -111,7 +100,7 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
   } catch (error: any) {
     try {
       await Audit.log(auditCtx, {
-        action: 'cotizacion.get.modificar.error',
+        action: 'cotizacion.get.editar.error',
         entity: 'Cotizacion',
         entityId: cotizacionId,
         before: null,
@@ -120,8 +109,9 @@ export async function getCotizacionParaModificar(req: AuthedRequest, cotizacionI
       });
     } catch {}
 
-    const err: any = error.status ? error : new Error("Error al obtener cotización para modificar");
-    err.status = error.status || 500;
-    throw err;
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError("Error al obtener cotización para editar", error.status || 500);
   }
 }

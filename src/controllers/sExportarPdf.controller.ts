@@ -1,14 +1,13 @@
 import { Response } from "express";
 import { AuthedRequest } from "../middleware/auth";
 import * as ExportarPdfService from "../services/sExportarPdf.service";
+import { AppError } from "../utils/AppError";
 
 export async function exportarCotizacionPdf(req: AuthedRequest, res: Response) {
   const { id } = req.params;
 
   if (!id) {
-    const err: any = new Error("ID de cotización requerido");
-    err.status = 400;
-    throw err;
+    throw new AppError("ID de cotización requerido", 400);
   }
 
   const buffer = await ExportarPdfService.generarPdfCotizacion(req, id);

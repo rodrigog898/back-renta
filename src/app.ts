@@ -6,13 +6,16 @@ import { apiLimiter } from './middleware/rateLimit';
 import { requestId } from './middleware/requestId';
 import { requestTimeout } from './middleware/timeout';
 import { errorHandler } from './middleware/errorHandler';
+
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-import bitacoraRoutes from './routes/cbitacora.routes';
-import cotizacionesRoutes from './routes/cmodificador.routes';
+import bitacoraKpiRoutes from './routes/cbitacoraKpi.routes';
+import editarCotizacionRoutes from './routes/cmodificarCotizacion.routes';
 import exportarExcelRoutes from './routes/cExportarExcel.routes';
 import exportarPdfRoutes from './routes/cExportarPdf.routes';
 import autocompletadoRoutes from './routes/cAutocompletado.routes';
+import cBitacoraRoutes from './routes/cbitacoraKpi.routes';
+import cCotizacionRoutes from "./routes/cCotizacion.routes";
 
 const app = express();
 
@@ -29,11 +32,20 @@ app.get('/health/readiness', (_req, res) => res.json({ status: 'ready' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/bitacora', bitacoraRoutes, exportarExcelRoutes, autocompletadoRoutes);
-app.use('/api/cotizaciones', cotizacionesRoutes, exportarPdfRoutes);
 
+app.use('/api/bitacora',
+  bitacoraKpiRoutes,
+  exportarExcelRoutes,
+  autocompletadoRoutes,
+  cBitacoraRoutes
+);
 
-
+// AQUÍ EL ORDEN CORRECTO 👇
+app.use('/api/cotizaciones',
+  cCotizacionRoutes,       // <-- primero
+  editarCotizacionRoutes,  // <-- después
+  exportarPdfRoutes        // <-- último
+);
 
 app.use(errorHandler);
 

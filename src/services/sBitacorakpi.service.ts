@@ -3,6 +3,7 @@ import Cotizacion from '../models/sBitacora';
 import * as Audit from './audit.service';
 import { getAuditContext } from '../middleware/audit';
 import { Request } from 'express';
+import { AppError } from '../utils/AppError';
 
 interface KPIMetric {
   valor: number;
@@ -90,9 +91,7 @@ export async function getKPIs(req: AuthedRequest): Promise<DashboardKPIs> {
   try {
     const userId = req.user?.id;
     if (!userId) {
-      const err: any = new Error("User not authenticated");
-      err.status = 401;
-      throw err;
+      throw new AppError("User not authenticated", 401);
     }
 
     const idCorredor = userId;
@@ -113,7 +112,7 @@ export async function getKPIs(req: AuthedRequest): Promise<DashboardKPIs> {
         after: null,
         metadata: { error: dbError.message, operation: 'find.all' }
       });
-      throw new Error("Error al obtener datos");
+      throw new AppError("Error al obtener datos", 500);
     }
 
     
@@ -132,7 +131,7 @@ export async function getKPIs(req: AuthedRequest): Promise<DashboardKPIs> {
         after: null,
         metadata: { error: filterError.message, operation: 'filtrarPorFecha' }
       });
-      throw new Error("Error al filtrar datos por fecha");
+      throw new AppError("Error al filtrar datos por fecha", 500);
     }
 
    
@@ -161,7 +160,7 @@ export async function getKPIs(req: AuthedRequest): Promise<DashboardKPIs> {
         after: null,
         metadata: { error: calcError.message, operation: 'calcular.actual', periodo: 'mes_actual' }
       });
-      throw new Error("Error al calcular KPIs del mes actual");
+      throw new AppError("Error al calcular KPIs del mes actual", 500);
     }
 
    
@@ -190,7 +189,7 @@ export async function getKPIs(req: AuthedRequest): Promise<DashboardKPIs> {
         after: null,
         metadata: { error: calcError.message, operation: 'calcular.anterior', periodo: 'mes_anterior' }
       });
-      throw new Error("Error al calcular KPIs del mes anterior");
+      throw new AppError("Error al calcular KPIs del mes anterior", 500);
     }
 
     
@@ -266,8 +265,9 @@ export async function getKPIs(req: AuthedRequest): Promise<DashboardKPIs> {
       });
     } catch {}
 
-    const err: any = error.status ? error : new Error("Error al obtener KPIs");
-    err.status = error.status || 500;
-    throw err;
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError("Error al obtener KPIs", error.status || 500);
   }
 }

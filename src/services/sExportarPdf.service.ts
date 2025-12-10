@@ -4,6 +4,7 @@ import { AuthedRequest } from "../middleware/auth";
 import * as Audit from "./audit.service";
 import { getAuditContext } from "../middleware/audit";
 import { Request } from "express";
+import { AppError } from "../utils/AppError";
 
 export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: string) {
   const auditCtx = getAuditContext(req as Request);
@@ -11,9 +12,7 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
   try {
     const userId = req.user?.id;
     if (!userId) {
-      const err: any = new Error("User not authenticated");
-      err.status = 401;
-      throw err;
+      throw new AppError("User not authenticated", 401);
     }
 
     let cot;
@@ -31,9 +30,7 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
         after: null,
         metadata: { error: dbError.message, operation: 'findOne' }
       });
-      const err: any = new Error("Error al buscar cotización");
-      err.status = 500;
-      throw err;
+      throw new AppError("Error al buscar cotización", 500);
     }
 
     if (!cot) {
@@ -45,9 +42,7 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
         after: null,
         metadata: { userId }
       });
-      const err: any = new Error("Cotización no encontrada o no pertenece al usuario");
-      err.status = 404;
-      throw err;
+      throw new AppError("Cotización no encontrada o no pertenece al usuario", 404);
     }
 
     let buffer: Buffer;
@@ -151,9 +146,7 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
         after: null,
         metadata: { error: pdfError.message, operation: 'generatePDF' }
       });
-      const err: any = new Error("Error al generar PDF");
-      err.status = 500;
-      throw err;
+      throw new AppError("Error al generar PDF", 500);
     }
 
     try {
@@ -180,8 +173,9 @@ export async function generarPdfCotizacion(req: AuthedRequest, cotizacionId: str
       });
     } catch {}
 
-    const err: any = error.status ? error : new Error("Error al exportar PDF");
-    err.status = error.status || 500;
-    throw err;
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError("Error al exportar PDF", error.status || 500);
   }
 }

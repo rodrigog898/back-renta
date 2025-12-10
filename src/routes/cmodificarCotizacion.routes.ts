@@ -1,14 +1,14 @@
 import { Router } from "express";
 import { auth } from "../middleware/auth";
-import * as ModificadorController from "../controllers/sModificador.controller";
+import * as ModificarCotizacionController from "../controllers/sModificarCotizacion.controller";
 import { asyncHandler } from "../middleware/asyncHandler";
 
 const router = Router();
 
 router.get(
-  "/:id/modificar",
+  "/editar-cotizacion/:id",
   auth,
-  asyncHandler(ModificadorController.getCotizacionParaModificar)
+  asyncHandler(ModificarCotizacionController.getCotizacionParaModificar)
 );
 
 export default router;

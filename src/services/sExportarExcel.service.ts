@@ -5,6 +5,7 @@ import { AuthedRequest } from "../middleware/auth";
 import * as Audit from "./audit.service";
 import { getAuditContext } from "../middleware/audit";
 import { Request } from "express";
+import { AppError } from "../utils/AppError";
 
 function capitalizar(texto: string): string {
   if (!texto) return texto;
@@ -26,9 +27,7 @@ export async function exportarBitacora(req: AuthedRequest) {
     const userId = req.user?.id;
     
     if (!userId) {
-      const err: any = new Error("Usuario no autenticado");
-      err.status = 401;
-      throw err;
+      throw new AppError("Usuario no autenticado", 401);
     }
 
     let usuario;
@@ -43,9 +42,7 @@ export async function exportarBitacora(req: AuthedRequest) {
         after: null,
         metadata: { error: dbError.message, operation: 'findById.user' }
       });
-      const err: any = new Error("Error al obtener información del usuario");
-      err.status = 500;
-      throw err;
+      throw new AppError("Error al obtener información del usuario", 500);
     }
 
     const nombreUsuario = usuario 
@@ -95,9 +92,7 @@ export async function exportarBitacora(req: AuthedRequest) {
         after: null,
         metadata: { error: dbError.message, operation: 'find', filtros }
       });
-      const err: any = new Error("Error al obtener datos de cotizaciones");
-      err.status = 500;
-      throw err;
+      throw new AppError("Error al obtener datos de cotizaciones", 500);
     }
   
   if (req.query.desde || req.query.hasta) {
@@ -364,9 +359,7 @@ export async function exportarBitacora(req: AuthedRequest) {
         after: null,
         metadata: { error: excelError.message, operation: 'writeBuffer', registros: datos.length }
       });
-      const err: any = new Error("Error al generar archivo Excel");
-      err.status = 500;
-      throw err;
+      throw new AppError("Error al generar archivo Excel", 500);
     }
 
     try {
@@ -393,8 +386,9 @@ export async function exportarBitacora(req: AuthedRequest) {
       });
     } catch {}
 
-    const err: any = error.status ? error : new Error("Error al exportar Excel");
-    err.status = error.status || 500;
-    throw err;
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError("Error al exportar Excel", error.status || 500);
   }
 }
