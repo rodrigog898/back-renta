@@ -21,10 +21,8 @@ export async function connectDB(): Promise<Connection> {
     }
   });
 
-  // health ping
   await mongoose.connection.db.admin().command({ ping: 1 });
 
-  // connection event logs
   mongoose.connection.on('disconnected', () => console.warn('[DB] disconnected'));
   mongoose.connection.on('reconnected', () => console.info('[DB] reconnected'));
   mongoose.connection.on('error', (e) => console.error('[DB] error', e));

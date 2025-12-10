@@ -40,11 +40,10 @@ app.use('/api/bitacora',
   cBitacoraRoutes
 );
 
-// AQUÍ EL ORDEN CORRECTO 👇
 app.use('/api/cotizaciones',
-  cCotizacionRoutes,       // <-- primero
-  editarCotizacionRoutes,  // <-- después
-  exportarPdfRoutes        // <-- último
+  cCotizacionRoutes,
+  editarCotizacionRoutes,
+  exportarPdfRoutes
 );
 
 app.use(errorHandler);

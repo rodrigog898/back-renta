@@ -24,8 +24,8 @@ export async function obtenerDatosVehiculo(patente: string) {
         tipo: vehiculoBD.tipo,
         color: vehiculoBD.color,
         valor_comercial: vehiculoBD.valor_comercial,
-        chasis: vehiculoBD.chasis,    
-        motor: vehiculoBD.motor,      
+        chasis: vehiculoBD.chasis,
+        motor: vehiculoBD.motor,
         kilometraje: vehiculoBD.kilometraje || null
       };
     }

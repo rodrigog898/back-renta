@@ -17,7 +17,6 @@ const refreshTokenSchema = new Schema<IRefreshToken>({
   revokedAt: { type: Date }
 });
 
-// 👇 Un refresh token por usuario, evita duplicados SIN usar tokenHash como único
 refreshTokenSchema.index({ userId: 1 }, { unique: true });
 
 refreshTokenSchema.virtual('isActive').get(function (this: IRefreshToken) {
