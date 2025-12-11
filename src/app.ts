@@ -12,6 +12,8 @@ import userRoutes from './routes/user.routes';
 import cbitacoraRoutes from './routes/cbitacora.routes';
 import emailroutes from './routes/email.routes';
 import { startReminderCron } from './cron/email.cron';
+import cotizacionroutes from './routes/cotizacion.routes';
+import exportdataroutes from './routes/exportData.routes';
 
 const app = express();
 
@@ -30,8 +32,10 @@ app.get('/health/readiness', (_req, res) => res.json({ status: 'ready' }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/bitacora', cbitacoraRoutes, ); 
+app.use('/api/bitacora', cbitacoraRoutes, exportdataroutes ); 
 app.use('/api/email', emailroutes);
+app.use('/api/cotizacion', cotizacionroutes);
+
 
 app.use(errorHandler);
 

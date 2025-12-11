@@ -17,7 +17,7 @@ const seguimientoSchema = new Schema<ISeguimiento>({
   type: { type: String },
   descripcion: { type: String },
   f_creacion: { type: Date, default: Date.now },
-  f_recordatorio: { type: Date, required: true },
+  f_recordatorio: { type: Date, required: false },
   id_user: { type: String, required: true },
   enviado: { type: Boolean, default: false },
   enviado_at: { type: Date },
