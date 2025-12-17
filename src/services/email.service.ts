@@ -1,4 +1,3 @@
-// src/services/email.service.ts
 import nodemailer, { Transporter } from 'nodemailer';
 import env from '../config/env';
 import { retry } from '../utils/retry';
@@ -149,7 +148,6 @@ class EmailService {
   }
 }
 
-// Singleton instance
 const emailService = new EmailService();
 
 export async function sendEmail(params: SendEmailParams): Promise<boolean> {

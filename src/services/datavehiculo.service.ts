@@ -1,15 +1,10 @@
 import axios from "axios";
-import Vehiculo from "../models/vehiculo"; // 👈 ajusta el path si es necesario
+import Vehiculo from "../models/vehiculo"; 
 import { AppError } from "../utils/AppError";
 import * as Audit from "./audit.service";
 import { AuditContext } from "../middleware/audit";
 
-/**
- * Obtiene datos de un vehículo por patente.
- * - Primero busca en la colección Vehiculos (BD).
- * - Si no encuentra, consulta la API externa.
- * - Devuelve siempre el mismo shape de objeto, con campo `fuente: "bd" | "api"`.
- */
+
 export async function obtenerDatosVehiculo(patente: string) {
   const patenteNormalizada = patente.toUpperCase().trim();
   console.log("[obtenerDatosVehiculo] Inicio", {
@@ -17,7 +12,6 @@ export async function obtenerDatosVehiculo(patente: string) {
     patenteNormalizada,
   });
 
-  // 1) Buscar en BD (modelo Vehiculos)
   try {
     console.log(
       "[obtenerDatosVehiculo] Buscando vehículo en BD (Vehiculos) por patente exacta",
@@ -69,7 +63,7 @@ export async function obtenerDatosVehiculo(patente: string) {
     });
   }
 
-  // 2) Consultar API externa
+ 
   try {
     const apiUrl = process.env.VEHICULO_API_URL;
     const url = `${apiUrl}&patente=${encodeURIComponent(patenteNormalizada)}`;
@@ -119,8 +113,6 @@ export async function obtenerDatosVehiculo(patente: string) {
       anio: datosApi.anio,
     });
 
-    // Aquí solo devolvemos los datos. Si quisieras persistir lo que viene de la API
-    // en la colección Vehiculos, podrías hacer un upsert con Vehiculo.findOneAndUpdate.
 
     return {
       fuente: "api" as const,
@@ -148,12 +140,7 @@ export async function obtenerDatosVehiculo(patente: string) {
   return null;
 }
 
-/**
- * Actualiza un vehículo existente en la colección Vehiculos o lo crea si no existe.
- * - Si encuentra por patente (case-insensitive) → actualiza.
- * - Si no encuentra → crea un nuevo registro.
- * Devuelve { accion: "actualizado" | "creado", vehiculo: ... }
- */
+
 export async function actualizarOCrearVehiculo(
   datosVehiculo: {
     patente: string;
@@ -183,12 +170,10 @@ export async function actualizarOCrearVehiculo(
   };
 
   try {
-    // Buscar si existe un vehículo con esa patente en el modelo Vehiculos
     const vehiculoExistente = await Vehiculo.findOne({
       patente: new RegExp(`^${patenteNormalizada}$`, "i"),
     }).lean();
 
-    // ---------- SI EXISTE → ACTUALIZA ----------
     if (vehiculoExistente) {
       const before = {
         patente: vehiculoExistente.patente,
@@ -249,7 +234,6 @@ export async function actualizarOCrearVehiculo(
       };
     }
 
-    // ---------- SI NO EXISTE → CREA ----------
     const vehiculoCreadoDoc = await Vehiculo.create(datosActualizados);
     const vehiculoCreado = vehiculoCreadoDoc.toObject();
 

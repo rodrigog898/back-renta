@@ -1,4 +1,3 @@
-// src/middleware/auth.ts
 import { Request, Response, NextFunction } from 'express';
 import { verify, JwtPayload } from '../utils/jwt';
 import User from '../models/User';

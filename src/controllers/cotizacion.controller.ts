@@ -1,52 +1,80 @@
 import { Response } from "express";
 import { AuthedRequest } from "../middleware/auth";
-import { obtenerInfoCompletaPatente, actualizarVehiculoService, obtenerInfoCompletaRut, actualizarAseguradoService } from "../services/cotizacion.service";
-import { AppError } from "../utils/AppError";
 import { getAuditContext } from "../middleware/audit";
+import { AppError } from "../utils/AppError";
 
-export async function obtenerDatosPatente(req: AuthedRequest, res: Response) {
-  const { patente } = req.params;
-    
-  if (!patente) {
-    throw new AppError("Debe enviar una patente.", 400);
+import {
+  crearCotizacionInicialService,
+  actualizarCotizacionVehiculoService,
+  actualizarCotizacionClienteService
+} from "../services/cotizacion.service";
+
+
+export async function crearCotizacionInicial(req: AuthedRequest, res: Response) {
+  const idCorredor = req.user?.id;   
+
+  if (!idCorredor) {
+    throw new AppError("Unauthorized", 401);
   }
 
-  const resultado = await obtenerInfoCompletaPatente(patente);
-  return res.json(resultado);
+  const auditCtx = getAuditContext(req);
+  const cotizacion = await crearCotizacionInicialService(idCorredor, auditCtx);
+
+  return res.status(201).json({
+    success: true,
+    _id: cotizacion._id,
+    n_cotizacion: cotizacion.n_cotizacion,
+    estado: cotizacion.estado,
+    vehiculo: cotizacion.vehiculo,
+    cliente: cotizacion.cliente,
+    mensaje: `Cotización #${cotizacion.n_cotizacion} creada exitosamente`,
+  });
 }
 
-
-export async function actualizarVehiculo(req: AuthedRequest, res: Response) {
+export async function actualizarVehiculoCotizacion(
+  req: AuthedRequest,
+  res: Response
+) {
+  const { idCotizacion } = req.params;
   const datosVehiculo = req.body;
+
+  if (!idCotizacion) {
+    throw new AppError("El ID de la cotización es requerido", 400);
+  }
+
   const auditCtx = getAuditContext(req);
 
-  if (!datosVehiculo.patente || !datosVehiculo.marca || !datosVehiculo.modelo || !datosVehiculo.anio) {
-    throw new AppError("Debe enviar patente, marca, modelo y año.", 400);
-  }
+  const cotizacion = await actualizarCotizacionVehiculoService(
+    idCotizacion,
+    datosVehiculo,
+    auditCtx
+  );
 
-  const resultado = await actualizarVehiculoService(datosVehiculo, auditCtx);
-  return res.json(resultado);
+  return res.json({
+    success: true,
+    cotizacion,
+    mensaje: "Datos del vehículo actualizados correctamente",
+  });
 }
 
-export async function obtenerDatosRut(req: AuthedRequest, res: Response) {
-  const { rut } = req.params;
 
-  if (!rut) {
-    throw new AppError("Debe enviar un RUT.", 400);
-  }
+export async function actualizarClienteCotizacion(req: AuthedRequest, res: Response) {
+  const { idCotizacion } = req.params;
+  const body = req.body;
 
-  const resultado = await obtenerInfoCompletaRut(rut);
-  return res.json(resultado);
-}
+  if (!idCotizacion) throw new AppError("El ID de la cotización es requerido", 400);
 
-export async function actualizarAsegurado(req: AuthedRequest, res: Response) {
-  const datosAsegurado = req.body;
+  
+  const rut = (body?.rut_cliente || body?.rut || "").toString();
+  if (!rut.trim()) throw new AppError("Debe enviar rut_cliente o rut", 400);
+
   const auditCtx = getAuditContext(req);
 
-  if (!datosAsegurado.rut_cliente || !datosAsegurado.nombre || !datosAsegurado.apellido || !datosAsegurado.correo) {
-    throw new AppError("Debe enviar RUT, nombre, apellido y correo.", 400);
-  }
+  const cotizacion = await actualizarCotizacionClienteService(idCotizacion, body, auditCtx);
 
-  const resultado = await actualizarAseguradoService(datosAsegurado, auditCtx);
-  return res.json(resultado);
+  return res.json({
+    success: true,
+    cotizacion,
+    mensaje: "Datos del asegurado actualizados correctamente",
+  });
 }

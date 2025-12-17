@@ -9,6 +9,9 @@ const router = Router();
 
 router.get("/", auth, asyncHandler(CotizacionController.list));
 
+// ruta para poder ordenar la grilla de la bitácora
+router.get("/ordenar-grilla",auth,asyncHandler(CotizacionController.ordenarGrillaBitacora));
+
 
 router.get("/seguimiento/:id_cotizacion", auth, asyncHandler(CseguimientoController.list));
 router.post("/seguimiento/:id_cotizacion", auth, asyncHandler(CseguimientoController.create));

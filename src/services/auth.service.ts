@@ -21,7 +21,6 @@ export async function register(email: string, password: string, auditCtx?: any) 
   const passwordHash = await bcrypt.hash(password, 10);
   const user = await User.create({ email, passwordHash });
 
-  // Audit: user.create
   try {
     await Audit.log(auditCtx || {}, {
       action: 'user.create',
@@ -75,7 +74,7 @@ export async function refresh(refreshTokenRaw: string) {
     err.status = 401;
     throw err;
   }
-  stored.revokedAt = new Date(); // rotación
+  stored.revokedAt = new Date(); 
   await stored.save();
 
   return issueTokens(String((payload as any).sub));

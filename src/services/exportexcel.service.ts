@@ -16,8 +16,83 @@ function capitalizar(texto: string): string {
     .join(' ');
 }
 
-function normalizarFecha(fecha: string): string {
-  return fecha.replace(/(\d{2})-(\d{2})-(\d{4})/, "$3-$2-$1");
+function normalizeDateStr(d?: string, end = false) {
+  if (!d) return undefined;
+  const [day, month, year] = d.split("-");
+  return `${year}-${month}-${day}T${end ? "23:59:59" : "00:00:00"}`;
+}
+
+function buildMatchVisibility(
+  user: { id: string; rol?: string } | undefined,
+  rut_cliente?: string,
+  id_corredor?: string,
+  estado?: string
+) {
+  const rol = (user?.rol || "").toLowerCase();
+  const isPrivileged =
+    rol === "ejecutivo" || rol === "admin" || rol === "administrator";
+
+  const matchVisibility: Record<string, any> = {};
+
+  if (!isPrivileged && user?.id) {
+    matchVisibility.id_corredor = String(user.id);
+  }
+
+  if (isPrivileged && id_corredor) {
+    matchVisibility.id_corredor = id_corredor;
+  }
+
+  const rutOrConditions: any[] = [];
+  if (rut_cliente) {
+    const rutClean = rut_cliente.replace(/\./g, "").replace(/-/g, "");
+    rutOrConditions.push(
+      { "cliente.rut_cliente": { $regex: rutClean, $options: "i" } },
+      { "cliente.rut_cliente": { $regex: rut_cliente, $options: "i" } }
+    );
+  }
+
+  const estadoOrConditions: any[] = [];
+  if (estado) {
+    const estadoLower = estado.toLowerCase();
+    const estadoWithSpace = estadoLower.replace(/_/g, " ");
+    const estadoWithUnderscore = estadoLower.replace(/\s+/g, "_");
+    
+    estadoOrConditions.push(
+      { estado: { $regex: `^${estadoWithSpace}$`, $options: "i" } },
+      { estado: { $regex: `^${estadoWithUnderscore}$`, $options: "i" } },
+      { estado: { $regex: `^${estadoLower}$`, $options: "i" } }
+    );
+  }
+
+  const andConditions: any[] = [];
+  if (rutOrConditions.length > 0) {
+    andConditions.push({ $or: rutOrConditions });
+  }
+  if (estadoOrConditions.length > 0) {
+    andConditions.push({ $or: estadoOrConditions });
+  }
+
+  if (andConditions.length === 1) {
+    matchVisibility.$or = andConditions[0].$or;
+  } else if (andConditions.length > 1) {
+    matchVisibility.$and = andConditions;
+  }
+
+  return matchVisibility;
+}
+
+function buildDateMatchExpr(date_from?: string, date_to?: string) {
+  const fromStr = normalizeDateStr(date_from, false);
+  const toStr = normalizeDateStr(date_to, true);
+
+  if (!fromStr && !toStr) return undefined;
+
+  return {
+    _fecha_dt: {
+      ...(fromStr && { $gte: new Date(fromStr) }),
+      ...(toStr && { $lte: new Date(toStr) }),
+    },
+  };
 }
 
 export async function exportarBitacora(req: AuthedRequest) {
@@ -49,40 +124,80 @@ export async function exportarBitacora(req: AuthedRequest) {
       ? `${usuario.nombre || ""} ${usuario.apellido || ""}`.trim() || usuario.email || "Usuario"
       : "Usuario";
 
-    const filtros: any = { id_corredor: userId };
+    const matchVisibility = buildMatchVisibility(
+      req.user,
+      req.query.rut_cliente as string | undefined,
+      req.query.id_corredor as string | undefined,
+      req.query.estado as string | undefined
+    );
 
-    if (req.query.estado) filtros.estado = req.query.estado;
+    const searchConditions: any[] = [];
+    const searchTerm = req.query.search as string | undefined;
+    if (searchTerm && searchTerm.trim()) {
+      const term = searchTerm.trim();
+      searchConditions.push(
+        { "cliente.nombre": { $regex: term, $options: "i" } },
+        { "cliente.apellido": { $regex: term, $options: "i" } },
+        { "vehiculo.patente": { $regex: term, $options: "i" } }
+      );
 
-    if (req.query.n_cotizacion) {
-      filtros.n_cotizacion = Number(req.query.n_cotizacion);
+      const cleanSearch = term
+        .replace(/COT-?/gi, "")
+        .replace(/\s+/g, "")
+        .replace(/-/g, "");
+
+      if (/^\d+$/.test(cleanSearch)) {
+        const numSearch = parseInt(cleanSearch, 10);
+        searchConditions.push({ n_cotizacion: numSearch });
+      }
     }
 
     if (req.query.cliente) {
       const search = String(req.query.cliente);
-      filtros.$and = filtros.$and || [];
-      filtros.$and.push({
-        $or: [
-          { "cliente.nombre": { $regex: search, $options: "i" } },
-          { "cliente.apellido": { $regex: search, $options: "i" } }
-        ]
-      });
+      searchConditions.push(
+        { "cliente.nombre": { $regex: search, $options: "i" } },
+        { "cliente.apellido": { $regex: search, $options: "i" } }
+      );
     }
 
     if (req.query.vehiculo) {
       const search = String(req.query.vehiculo);
-      filtros.$and = filtros.$and || [];
-      filtros.$and.push({
-        $or: [
-          { "vehiculo.marca": { $regex: search, $options: "i" } },
-          { "vehiculo.modelo": { $regex: search, $options: "i" } },
-          { "vehiculo.patente": { $regex: search, $options: "i" } }
-        ]
-      });
+      searchConditions.push(
+        { "vehiculo.marca": { $regex: search, $options: "i" } },
+        { "vehiculo.modelo": { $regex: search, $options: "i" } },
+        { "vehiculo.patente": { $regex: search, $options: "i" } }
+      );
     }
+
+    const dateFrom = req.query.desde as string | undefined;
+    const dateTo = req.query.hasta as string | undefined;
+    const dateMatchExpr = buildDateMatchExpr(dateFrom, dateTo);
+
+    const pipeline: any[] = [
+      { $match: { ...matchVisibility } },
+      ...(searchConditions.length > 0
+        ? [{ $match: { $or: searchConditions } }]
+        : []),
+      {
+        $addFields: {
+          _fecha_dt: {
+            $dateFromString: {
+              dateString: "$fecha_cotizacion",
+              format: "%d-%m-%Y %H:%M:%S",
+              onError: null,
+              onNull: null,
+            },
+          },
+        },
+      },
+      ...(dateMatchExpr ? [{ $match: dateMatchExpr }] : []),
+      { $sort: { _fecha_dt: -1, _id: -1 } },
+    ];
 
     let datos: any[] = [];
     try {
-      datos = await Cotizacion.find(filtros).lean().maxTimeMS(10000);
+      const results = await Cotizacion.aggregate(pipeline).allowDiskUse(true);
+      datos = results;
     } catch (dbError: any) {
       await Audit.log(auditCtx, {
         action: 'excel.export.error',
@@ -90,94 +205,73 @@ export async function exportarBitacora(req: AuthedRequest) {
         entityId: null,
         before: null,
         after: null,
-        metadata: { error: dbError.message, operation: 'find', filtros }
+        metadata: { error: dbError.message, operation: 'aggregate', pipeline }
       });
       throw new AppError("Error al obtener datos de cotizaciones", 500);
     }
-  
-  if (req.query.desde || req.query.hasta) {
-    datos = datos.filter((cot) => {
-      const fechaNorm = normalizarFecha(cot.fecha_cotizacion);
-      if (req.query.desde) {
-        const d = normalizarFecha(String(req.query.desde));
-        if (fechaNorm < d) return false;
-      }
-      if (req.query.hasta) {
-        const h = normalizarFecha(String(req.query.hasta));
-        if (fechaNorm > h) return false;
-      }
-      return true;
-    });
-  }
-
-  const mapaOrden: Record<string, string> = {
-    cliente: "cliente.nombre",
-    vehiculo: "vehiculo.marca",
-    producto: "producto.t_producto",
-    prima: "prima",
-    comision: "comision",
-    prob_cierre: "prob_cierre",
-    estado: "estado",
-    fecha: "fecha_cotizacion",
-    n_cotizacion: "n_cotizacion"
-  };
 
   const sortStr = String(req.query.sort || "");
   const dirStr = String(req.query.dir || "");
-  const ordenamientos: Array<{ campo: string; dir: number }> = [];
-
+  
   if (sortStr && dirStr) {
+    const mapaOrden: Record<string, string> = {
+      cliente: "cliente.nombre",
+      vehiculo: "vehiculo.marca",
+      producto: "producto.t_producto",
+      prima: "prima",
+      comision: "comision",
+      prob_cierre: "prob_cierre",
+      estado: "estado",
+      fecha: "_fecha_dt",
+      n_cotizacion: "n_cotizacion"
+    };
+
     const campos = sortStr.split(",");
     const dirs = dirStr.split(",");
+    const ordenamientos: Array<{ campo: string; dir: number }> = [];
 
     campos.forEach((campo, index) => {
       const direccion = dirs[index]?.trim() || "asc";
       const dirNum = direccion === "desc" ? -1 : 1;
-
       const campoReal = mapaOrden[campo.trim()];
       if (campoReal) ordenamientos.push({ campo: campoReal, dir: dirNum });
     });
-  }
 
-  if (ordenamientos.length === 0) {
-    ordenamientos.push({ campo: "fecha_cotizacion", dir: -1 });
-  }
+    if (ordenamientos.length > 0) {
+      const obtenerValor = (obj: any, campo: string): any => {
+        const partes = campo.split(".");
+        let valor: any = obj;
+        for (const p of partes) {
+          if (valor === null || valor === undefined) return "";
+          valor = valor[p];
+        }
+        return valor === null || valor === undefined ? "" : valor;
+      };
 
-  const obtenerValor = (obj: any, campo: string): any => {
-    const partes = campo.split(".");
-    let valor: any = obj;
-    for (const p of partes) {
-      if (valor === null || valor === undefined) return "";
-      valor = valor[p];
+      datos.sort((a, b) => {
+        for (const orden of ordenamientos) {
+          let valA = obtenerValor(a, orden.campo);
+          let valB = obtenerValor(b, orden.campo);
+
+          let diff = 0;
+          if (valA instanceof Date && valB instanceof Date) {
+            diff = valA.getTime() - valB.getTime();
+          } else if (typeof valA === "number" && typeof valB === "number") {
+            diff = valA - valB;
+          } else {
+            const strA = String(valA || "");
+            const strB = String(valB || "");
+            diff = strA.localeCompare(strB, "es", { sensitivity: "base", numeric: true });
+          }
+
+          if (diff !== 0) {
+            return diff * orden.dir;
+          }
+        }
+        return 0;
+      });
     }
-    return valor === null || valor === undefined ? "" : valor;
-  };
-
-  datos.sort((a, b) => {
-    for (const orden of ordenamientos) {
-      let valA = obtenerValor(a, orden.campo);
-      let valB = obtenerValor(b, orden.campo);
-
-      if (orden.campo === "fecha_cotizacion") {
-        valA = valA ? normalizarFecha(String(valA)) : "";
-        valB = valB ? normalizarFecha(String(valB)) : "";
-      }
-
-      let diff = 0;
-      if (typeof valA === "number" && typeof valB === "number") {
-        diff = valA - valB;
-      } else {
-        const strA = String(valA || "");
-        const strB = String(valB || "");
-        diff = strA.localeCompare(strB, "es", { sensitivity: "base", numeric: true });
-      }
-
-      if (diff !== 0) {
-        return diff * orden.dir;
-      }
-    }
-    return 0;
-  });
+  }
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Bitácora");
@@ -264,7 +358,7 @@ export async function exportarBitacora(req: AuthedRequest) {
       capitalizar(cot.vehiculo.modelo),
       cot.vehiculo.anio,
       cot.vehiculo.patente,
-      cot.vehiculo.kilometraje,
+      cot.vehiculo.kilometraje || "",
       capitalizar(cot.producto.t_producto),
       cot.producto.deducible,
       cot.prima,
@@ -369,7 +463,7 @@ export async function exportarBitacora(req: AuthedRequest) {
         entityId: null,
         before: null,
         after: { registros: datos.length, usuario: nombreUsuario },
-        metadata: { filtros, userId }
+        metadata: { userId }
       });
     } catch {}
 

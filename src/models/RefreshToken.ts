@@ -11,13 +11,12 @@ export interface IRefreshToken extends Document {
 
 const refreshTokenSchema = new Schema<IRefreshToken>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  tokenHash: { type: String, required: true, index: true }, // 👈 SIN unique
+  tokenHash: { type: String, required: true, index: true },
   expiresAt: { type: Date, required: true },
   createdAt: { type: Date, default: Date.now },
   revokedAt: { type: Date }
 });
 
-// 👇 Un refresh token por usuario, evita duplicados SIN usar tokenHash como único
 refreshTokenSchema.index({ userId: 1 }, { unique: true });
 
 refreshTokenSchema.virtual('isActive').get(function (this: IRefreshToken) {

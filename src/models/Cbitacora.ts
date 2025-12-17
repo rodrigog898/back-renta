@@ -33,7 +33,7 @@ export interface IProducto {
 
 export interface ICotizacion extends Document {
   n_cotizacion: number;
-  fecha_cotizacion: string;  // dd-mm-yyyy hh:mm:ss
+  fecha_cotizacion: string;  
   id_corredor: string;
 
   cliente: ICliente;
@@ -56,7 +56,7 @@ const clienteSchema = new Schema<ICliente>({
   correo: { type: String, required: true },
   telefono: { type: String, required: true },
   sexo: { type: String, required: true },
-  fecha_nacimiento: { type: String, required: true },
+  fecha_nacimiento: { type: String, required: false },
   ciudad: { type: String, required: false },
   comuna: { type: String, required: false },
   direccion: { type: String, required: false },
@@ -87,13 +87,13 @@ const cotizacionSchema = new Schema<ICotizacion>(
     fecha_cotizacion: { type: String, required: true },
     id_corredor: { type: String, required: true },
 
-    cliente: { type: clienteSchema, required: true },
-    vehiculo: { type: vehiculoSchema, required: true },
-    producto: { type: productoSchema, required: true },
+    cliente: { type: clienteSchema, required: false },
+    vehiculo: { type: vehiculoSchema, required: false },
+    producto: { type: productoSchema, required: false },
 
-    prima: { type: Number, required: true },
-    comision: { type: Number, required: true },
-    prob_cierre: { type: Number, required: true },
+    prima: { type: Number, required: false },
+    comision: { type: Number, required: false },
+    prob_cierre: { type: Number, required: false },
 
     estado: { type: String, required: true },
   },

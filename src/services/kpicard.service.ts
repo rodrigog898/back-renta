@@ -21,7 +21,7 @@ export interface DashboardKPIs {
 
 
 function parseFecha(fecha: string): Date {
-  // fecha viene como: dd-mm-yyyy hh:mm:ss
+
   const [fechaPart, horaPart] = fecha.split(" ");
   const [dd, mm, yyyy] = fechaPart.split("-").map(Number);
   return new Date(yyyy, mm - 1, dd, ...horaPart.split(":").map(Number));
