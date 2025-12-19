@@ -12,6 +12,7 @@ import userRoutes from './routes/user.routes';
 import cbitacoraRoutes from './routes/cbitacora.routes';
 import emailroutes from './routes/email.routes';
 import { startReminderCron } from './cron/email.cron';
+import { startCaducarCotizacionesCron } from './cron/cCaducidad.cron';
 import cotizacionroutes from './routes/cotizacion.routes';
 import exportdataroutes from './routes/exportData.routes';
 
@@ -24,6 +25,7 @@ app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(requestTimeout());
 startReminderCron();
+startCaducarCotizacionesCron();
 app.use('/api', apiLimiter);
 
 app.get('/health/liveness', (_req, res) => res.json({ status: 'ok' }));

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import e, { Router } from "express";
 import { auth } from "../middleware/auth";
 import { asyncHandler } from "../middleware/asyncHandler";
 
@@ -13,11 +13,11 @@ import { obtenerDatosRut, actualizarAsegurado } from "../controllers/cotizacion/
 
 
 // COTIZACIÓN
-import {
-  crearCotizacionInicial,
-  actualizarVehiculoCotizacion,
-  actualizarClienteCotizacion
-} from "../controllers/cotizacion.controller";
+import {crearCotizacionInicial,actualizarVehiculoCotizacion,actualizarClienteCotizacion,obtenerCotizacionPorPatente} from "../controllers/cotizacion.controller";
+
+
+// CONDICIONES
+import { guardarCondiciones } from "../controllers/cotizacion/condiciones.controller";
 
 const router = Router();
 
@@ -32,5 +32,12 @@ router.put("/asegurado", auth, asyncHandler(actualizarAsegurado));
 router.post("/", auth, asyncHandler(crearCotizacionInicial));
 router.put("/:idCotizacion/vehiculo", auth, asyncHandler(actualizarVehiculoCotizacion));
 router.put("/:idCotizacion/cliente", auth, asyncHandler(actualizarClienteCotizacion));
+
+// -- Condiciones ---
+router.put("/:idCotizacion/condiciones", auth, asyncHandler(guardarCondiciones));
+
+// validacion de paso
+router.get("/patente/:patente", auth, asyncHandler(obtenerCotizacionPorPatente));
+
 
 export default router;

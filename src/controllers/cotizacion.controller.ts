@@ -6,7 +6,9 @@ import { AppError } from "../utils/AppError";
 import {
   crearCotizacionInicialService,
   actualizarCotizacionVehiculoService,
-  actualizarCotizacionClienteService
+  actualizarCotizacionClienteService,
+  obtenerCotizacionCompletaPorPatente,
+  determinarPasoActual
 } from "../services/cotizacion.service";
 
 
@@ -77,4 +79,32 @@ export async function actualizarClienteCotizacion(req: AuthedRequest, res: Respo
     cotizacion,
     mensaje: "Datos del asegurado actualizados correctamente",
   });
+}
+
+export async function obtenerCotizacionPorPatente(req: AuthedRequest, res: Response) {
+  try {
+    const { patente } = req.params;
+
+    if (!patente) {
+      return res.status(400).json({
+        success: false,
+        message: "La patente es requerida",
+      });
+    }
+
+    const cotizacion = await obtenerCotizacionCompletaPorPatente(patente);
+    const pasoActual = determinarPasoActual(cotizacion);
+
+    return res.json({
+      success: true,
+      cotizacion,
+      pasoActual,
+    });
+  } catch (error: any) {
+    console.error("[obtenerCotizacionPorPatente] Error:", error);
+    return res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || "Error al obtener la cotización",
+    });
+  }
 }

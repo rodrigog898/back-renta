@@ -31,6 +31,11 @@ export interface IProducto {
   deducible: number;
 }
 
+export interface ICondiciones {
+  comentario: string;
+  tags: string[];
+}
+
 export interface ICotizacion extends Document {
   n_cotizacion: number;
   fecha_cotizacion: string;  
@@ -39,14 +44,12 @@ export interface ICotizacion extends Document {
   cliente: ICliente;
   vehiculo: IVehiculo;
   producto: IProducto;
+  condiciones?: ICondiciones; 
 
   prima: number;
   comision: number;
   prob_cierre: number;
-  estado: string;
-
-  createdAt: Date;
-  updatedAt: Date;
+  estado: 'EN_PROCESO' | 'CADUCADA';
 }
 
 const clienteSchema = new Schema<ICliente>({
@@ -76,10 +79,19 @@ const vehiculoSchema = new Schema<IVehiculo>({
   
 });
 
+
+
 const productoSchema = new Schema<IProducto>({
   t_producto: { type: String, required: true },
   deducible: { type: Number, required: true },
 });
+
+
+//CONDICIONES EN COTIZACIÓN
+const condicionesSchema = new Schema<ICondiciones>({
+  comentario: { type: String, default: '', trim: true },
+  tags: { type: [String], default: [] }
+}, { _id: false });
 
 const cotizacionSchema = new Schema<ICotizacion>(
   {
@@ -90,14 +102,20 @@ const cotizacionSchema = new Schema<ICotizacion>(
     cliente: { type: clienteSchema, required: false },
     vehiculo: { type: vehiculoSchema, required: false },
     producto: { type: productoSchema, required: false },
+    condiciones: { type: condicionesSchema, required: false },
 
     prima: { type: Number, required: false },
     comision: { type: Number, required: false },
     prob_cierre: { type: Number, required: false },
 
-    estado: { type: String, required: true },
+    estado: { 
+     type: String, 
+     enum: ['EN_PROCESO', 'CADUCADA'],
+     default: 'EN_PROCESO',
+     required: true 
+   },
   },
-  { timestamps: true }
+  { timestamps: false, versionKey: false }
 );
 
 const Cotizacion: Model<ICotizacion> =

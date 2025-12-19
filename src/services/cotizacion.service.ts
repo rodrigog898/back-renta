@@ -1,5 +1,7 @@
 import { obtenerDatosVehiculo, actualizarOCrearVehiculo } from "./datavehiculo.service";
 import { obtenerDatosAsegurado, actualizarOCrearAsegurado } from "./asegurado.service";
+import {existeCotizacionVigente,obtenerCotizacionVigente} from "./cotizacion/caducarCotizaciones.service";
+
 import { AuditContext } from "../middleware/audit";
 import Cotizacion from "../models/Cbitacora";
 import { AppError } from "../utils/AppError";
@@ -14,6 +16,19 @@ export async function obtenerInfoCompletaPatente(patente: string) {
       mostrarFormulario: true,
       mensaje: "No se encontraron datos. Ingreso manual habilitado."
     };
+  }
+      // VALIDACIÓN: verificar si existe una cotización vigente para esta patente
+  const existeVigente = await existeCotizacionVigente(patenteNormalizada);
+  
+  if (existeVigente) {
+    const cotizacionExistente = await obtenerCotizacionVigente(patenteNormalizada);
+    
+    if (cotizacionExistente) {
+      throw new AppError(
+        `Tu cotización está en proceso aún, por favor intenta con otra patente. (Cotización #${cotizacionExistente.n_cotizacion})`,
+        409
+      );
+    }
   }
 
   const vehiculo = await obtenerDatosVehiculo(patenteNormalizada);
@@ -181,7 +196,6 @@ export async function actualizarVehiculoEnCotizacionService(
     throw new AppError("Debe enviar id_cotizacion.", 400);
   }
 
-
   const before = await Cotizacion.findById(datos.id_cotizacion).lean();
 
   let vehiculoBD: any = null;
@@ -316,6 +330,8 @@ export async function actualizarCotizacionClienteService(
   if (!cotizacionAntes) {
     throw new AppError("Cotización no encontrada.", 404);
   }
+    
+    
 
   const rutNormalizado = normalizarRut(datosCliente.rut_cliente || datosCliente.rut || "");
   if (!rutNormalizado) {
@@ -476,6 +492,8 @@ export async function actualizarCotizacionVehiculoService(
   if (!cotizacionAntes) {
     throw new AppError("Cotización no encontrada.", 404)
   }
+    
+
 
   const vehiculoActualizado = {
     patente: datosVehiculo.patente || cotizacionAntes.vehiculo?.patente || "-",
@@ -517,12 +535,104 @@ export async function actualizarCotizacionVehiculoService(
 }
 
 
+// Obtener cotización completa por ID, para luego de cliquear en el modal redirija a el paso que quedo.
+export async function obtenerCotizacionCompletaPorId(idCotizacion: string) {
+  if (!idCotizacion) {
+    throw new AppError("Falta id de la cotización.", 400);
+  }
+
+  const cotizacion = await Cotizacion.findById(idCotizacion).lean();
+
+  if (!cotizacion) {
+    throw new AppError("Cotización no encontrada.", 404);
+  }
+
+  return cotizacion;
+}
+
+// Obtener cotización completa por patente
+export async function obtenerCotizacionCompletaPorPatente(patente: string) {
+  const patenteNormalizada = patente.toUpperCase().trim();
+
+  if (!patenteNormalizada) {
+    throw new AppError("La patente es obligatoria.", 400);
+  }
+
+  const cotizacion = await Cotizacion.findOne({
+    'vehiculo.patente': patenteNormalizada,
+    estado: { $nin: ['CADUCADA'] }
+  }).lean();
+
+  if (!cotizacion) {
+    throw new AppError("No se encontró una cotización vigente para esta patente.", 404);
+  }
+
+  return cotizacion;
+}
+
+// Determinar el paso actual de una cotización basado en sus datos
+export function determinarPasoActual(cotizacion: any): number {
+  if (!cotizacion) {
+    return 1;
+  }
+
+  // Paso 1: Vehículo - verificar si tiene datos válidos (no "-" o vacío)
+  const tieneVehiculo = cotizacion.vehiculo && 
+    cotizacion.vehiculo.patente && 
+    cotizacion.vehiculo.patente !== "-" &&
+    cotizacion.vehiculo.marca &&
+    cotizacion.vehiculo.marca !== "-";
+
+  if (!tieneVehiculo) {
+    return 1;
+  }
+
+  // Paso 2: Asegurado - verificar si tiene datos válidos (no "-" o vacío)
+  const tieneAsegurado = cotizacion.cliente && 
+    cotizacion.cliente.rut_cliente && 
+    cotizacion.cliente.rut_cliente !== "-" &&
+    cotizacion.cliente.nombre &&
+    cotizacion.cliente.nombre !== "-" &&
+    cotizacion.cliente.correo &&
+    cotizacion.cliente.correo !== "-";
+
+  if (!tieneAsegurado) {
+    return 2;
+  }
+
+  // Paso 3: Requisitos - verificar si tiene condiciones
+  const tieneCondiciones = cotizacion.condiciones && (
+    (cotizacion.condiciones.comentario && cotizacion.condiciones.comentario.trim() !== "") ||
+    (cotizacion.condiciones.tags && cotizacion.condiciones.tags.length > 0)
+  );
+
+  if (!tieneCondiciones) {
+    return 3;
+  }
+
+  // Paso 4: Productos - verificar si tiene producto configurado
+  const tieneProducto = cotizacion.producto && 
+    cotizacion.producto.t_producto && 
+    cotizacion.producto.t_producto !== "Pendiente";
+
+  if (!tieneProducto) {
+    return 4;
+  }
+
+  // Si tiene todo, está en el paso 4 (último paso)
+  return 4;
+}
+
+
 function formatearFechaActual(): string {
   const hoy = new Date()
   const dia = String(hoy.getDate()).padStart(2, '0')
   const mes = String(hoy.getMonth() + 1).padStart(2, '0')
   const anio = hoy.getFullYear()
-  return `${dia}-${mes}-${anio}`
+  const hora = String(hoy.getHours()).padStart(2, '0')
+  const minutos = String(hoy.getMinutes()).padStart(2, '0')
+  const segundos = String(hoy.getSeconds()).padStart(2, '0')
+  return `${dia}-${mes}-${anio} ${hora}:${minutos}:${segundos}`
 }
 
 
