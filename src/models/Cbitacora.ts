@@ -27,8 +27,20 @@ export interface IVehiculo {
 }
 
 export interface IProducto {
-  t_producto: string;
-  deducible: number;
+  version?: string;
+  fechaCreacion?: string | null;
+  fechaFinVigencia?: string | null;
+  planId?: string | null;
+  planNombre?: string | null;
+  ofertaId?: string | null;
+  deducible?: number;
+  primaUF?: number | null;
+  primaPesos?: number | null;
+  deducibleAdicional?: number;
+  coberturasAdicionales?: Array<{
+    opcionalId: string;
+    opcionId: string | null;
+  }>;
 }
 
 export interface ICondiciones {
@@ -82,8 +94,17 @@ const vehiculoSchema = new Schema<IVehiculo>({
 
 
 const productoSchema = new Schema<IProducto>({
-  t_producto: { type: String, required: true },
-  deducible: { type: Number, required: true },
+  version: { type: String, required: false },
+  fechaCreacion: { type: String, required: false, default: null },
+  fechaFinVigencia: { type: String, required: false, default: null },
+  planId: { type: String, required: false, default: null },
+  planNombre: { type: String, required: false, default: null },
+  ofertaId: { type: String, required: false, default: null },
+  deducible: { type: Number, required: false, default: 0 },
+  primaUF: { type: Number, required: false, default: null },
+  primaPesos: { type: Number, required: false, default: null },
+  deducibleAdicional: { type: Number, required: false },
+  coberturasAdicionales: { type: Schema.Types.Mixed, required: false, default: [] },
 });
 
 
