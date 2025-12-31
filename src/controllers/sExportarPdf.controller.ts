@@ -15,19 +15,30 @@ export async function exportarCotizacionPdf(req: AuthedRequest, res: Response) {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `inline; filename="cotizacion-${id}.pdf"`);
 
-   
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, proxy-revalidate"
+    );
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
     res.setHeader("Content-Length", buffer.length);
+
     return res.status(200).send(buffer);
   } catch (error: any) {
     console.error("Error en exportarCotizacionPdf:", error);
 
-    const status = error?.statusCode ?? error?.status ?? 500;
+    // Compat con AppError distintas implementaciones
+    const status =
+      error?.statusCode ??
+      error?.status ??
+      500;
+
     const message =
-      error instanceof AppError ? error.message : "Error al visualizar PDF de cotización";
+      error instanceof AppError
+        ? error.message
+        : "Error al visualizar PDF de cotización";
 
     return res.status(status).json({ success: false, error: message });
   }
