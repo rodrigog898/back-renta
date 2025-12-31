@@ -53,21 +53,3 @@ export async function caducarCotizacionesVencidas() {
   }
 }
 
-
-// busca si existe una cotización vigente para la patente dada
-export async function existeCotizacionVigente(patente: string): Promise<boolean> {
-  const cotizacionVigente = await Cotizacion.findOne({
-    'vehiculo.patente': patente.toUpperCase(),
-    estado: { $nin: ['CADUCADA'] } // Estados que bloquea
-  });
-
-  return cotizacionVigente !== null;
-}
-
-// Obtener detalles de cotización vigente (para mostrar info al usuario)
-export async function obtenerCotizacionVigente(patente: string) {
-  return await Cotizacion.findOne({
-    'vehiculo.patente': patente.toUpperCase(),
-    estado: { $nin: ['CADUCADA'] }
-  }).select('n_cotizacion fecha_cotizacion estado id_corredor');
-}

@@ -19,6 +19,11 @@ import {crearCotizacionInicial,actualizarVehiculoCotizacion,actualizarClienteCot
 // CONDICIONES
 import { guardarCondiciones } from "../controllers/cotizacion/condiciones.controller";
 
+
+// PRODUCTO
+import { obtenerProductosCotizacion } from "../controllers/cotizacion/producto.controller";
+
+
 const router = Router();
 
 // --- Vehículo ---
@@ -36,7 +41,10 @@ router.put("/:idCotizacion/cliente", auth, asyncHandler(actualizarClienteCotizac
 // -- Condiciones ---
 router.put("/:idCotizacion/condiciones", auth, asyncHandler(guardarCondiciones));
 
-// validacion de paso
+// -- Producto -- 
+router.get("/:idCotizacion/productos", auth, asyncHandler(obtenerProductosCotizacion));
+
+// validacion de paso, esto sirve para validar si esta en proceso 
 router.get("/patente/:patente", auth, asyncHandler(obtenerCotizacionPorPatente));
 
 
